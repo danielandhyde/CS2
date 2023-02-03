@@ -1,0 +1,209 @@
+/*
+Daniel Thew
+COP3503C - Arup Guha
+Spring 2022
+Tentaizu
+ */
+import java.util.Scanner;
+
+public class main {
+    //static int for the width/height of the board
+    final static int LINES = 7;
+    //static int for the max number of bombs the board can have
+    final static int BOMBS = 10;
+    //matrix to hold the directions around a spot in the board
+    final static int[] MATRIX = {-1,0,1};
+
+    public static void main(String[] args) {
+        //Scanner for user input
+        Scanner scan = new Scanner(System.in);
+        //int to hold the number of boards
+        int num = scan.nextInt();
+        //clear line
+        scan.nextLine();
+        //for every board
+        for(int j = 0; j < num; j++) {
+            //2d array for the board, filled in as characters
+            char[][] t_arr = new char[LINES][LINES];
+            //scan in each line to the current 2d array
+            for (int i = 0; i < LINES; i++) t_arr[i] = scan.nextLine().toCharArray();
+            //solve the array starting at index (0,0) with 0 bombs
+            solve(t_arr, 0, 0, 0);
+        }
+    }
+
+    //function that will handle the recursive backtracking solution, given the board array, the current row and col, and the current num bombs
+    static boolean solve(char[][] arr, int row, int col, int numBombs){
+        //if there are too many bombs, go back
+        if(numBombs>BOMBS){
+            return false;
+        }
+        //if we're at the end of the board
+        if(row==LINES) {
+            //if there arent enough bombs, go back
+            if (numBombs < BOMBS) return false;
+                //otherwise, print the board and trigger the end clause (returning true all the way through)
+            else {
+                printBoard(arr);
+                return true;
+            }
+        }
+
+        //boolean set to false that will be used later to determine if something is true or false
+        boolean isDone = false;
+        //for each column in the current row at and after the current column
+        for(int i = col; i < LINES; i++){
+            //if the spot is invalid in some way (already a bomb, is a digit spot, or isn't valid via the isValid function)
+            if(arr[row][i]=='*'||Character.isDigit(arr[row][i])||!isValid(arr, row, i)){
+                //if the current spot is an invalid end to the AOE of a digit, go back
+                if(!goodEndOfAOE(arr, row, i)) return false;
+
+                //if the next recursive call will go to a column beyond the board, call with the next row and col 0 and the same number of bombs (we didn't add any)
+                if(i+1>=LINES) return solve(arr, row+1, 0, numBombs);
+                //otherwise, call with the next column index
+                else return solve(arr, row, i+1, numBombs);
+            }
+
+            //else if the spot is valid for a bomb
+            else{
+                //set the spot to be a bomb
+                arr[row][i] = '*';
+
+                //if, with the bomb, this is an invalid end for the corresponding number's AOE
+                if(!goodEndOfAOE(arr, row, i)){
+                    //reset the spot to a dot and backtrack
+                    arr[row][i] = '.';
+                    return false;
+                }
+
+                //if the next recursive call will go to a column beyond the board, call with the next row and col 0, adding one bomb
+                if(i+1>=LINES) isDone = solve(arr, row+1, 0, numBombs+1);
+                //else just call with the next col index and add one bomb
+                else isDone = solve(arr, row, i+1, numBombs+1);
+                //after these calls, if the isDone variable ends up being true, we exit here and now because we have gotten an answer
+                if(isDone) return true;
+
+                //otherwise, we're backtracking, so we reset the spot to a dot
+                arr[row][i] = '.';
+
+                //if this spot WITHOUT the bomb is an invalid end for the corresponding number's AOE, backtrack
+                if(!goodEndOfAOE(arr, row, i)) return false;
+            }
+        }
+        //a return for the end of the function
+        return isDone;
+    }
+
+    //function  to check if a spot is a valid space for a bomb, given the board and current row and col
+    static boolean isValid(char[][] arr, int row, int col){
+        //flag to know if there is a digit in the spot's AOE
+        int flag = 0;
+
+        //for the length of our directional array (for rows)
+        for(int i = 0; i < 3; i++){
+            //int for the current modification of our current row
+            int r = row+MATRIX[i];
+            //if the r is invalid, go to the next
+            if(r<0||r>=LINES) continue;
+            //for the length of our directional array (for cols)
+            for(int j = 0; j < 3; j++){
+                //int for the current modification of our current col
+                int c = col+MATRIX[j];
+                //if the c is invalid, go to the next
+                if(c<0||c>=LINES) continue;
+
+                //if there is any spot in the AOE that is 0, we cannot place a bomb adjacent to it, so we return false immediately
+                if(Character.getNumericValue(arr[r][c])==0) return false;
+
+                //otherwise, if there's a valid digit adjacent to the spot
+                if(Character.isDigit(arr[r][c])){
+                    //if this spot is at its maximum number of bombs, return false
+                    if(isBombMaxed(arr, r, c)) return false;
+                    //otherwise, we say that there is a number; we don't exit in case there's an invalid number elsewhere in the AOE
+                    flag = 1;
+                }
+            }
+        }
+        //if there's a valid number in the AOE, return true
+        if(flag==1) return true;
+        //otherwise, return false
+        else return false;
+    }
+
+    //function for getting the sum of bombs around a digit
+    static int getSum(char[][] arr, int row, int col){
+        //int to return to hold the sum
+        int sum = 0;
+        //for the full AOE of the spot, as seen in the isValid function
+        for(int i = 0; i < 3; i++){
+            int r = row+MATRIX[i];
+            if(r<0||r>=LINES) continue;
+            for(int j = 0; j < 3; j++){
+                int c = col+MATRIX[j];
+                if(c<0||c>=LINES) continue;
+                //if this modified spot is a bomb, add one to the sum
+                if(arr[r][c]=='*') sum++;
+            }
+        }
+        //return the end sum
+        return sum;
+    }
+
+    //function to check if a digit spot has the max number of bombs around it
+    static boolean isBombMaxed(char[][] arr, int row, int col) {
+        //sum of the bombs around a digit
+        int sum = getSum(arr, row, col);
+        //number of bombs around the digit, specified by the digit itself
+        int totalBombs = Character.getNumericValue(arr[row][col]);
+        //if the sum is the same as the digit, it is maxed out; return true (the bomb IS maxed)
+        if (sum == totalBombs) return true;
+        //otherwise, there are fewer bombs than the max, so we return false
+        return false;
+    }
+
+    //function to check if a digit spot has too few bombs around it, especially at the end of the digit's AOE
+    static boolean isBombTooSmall(char[][] arr, int numRow, int numCol){
+        //sum of the bombs around a digit
+        int sum = getSum(arr, numRow, numCol);
+        //number of bombs supposed to be around the digit, specified by the digit itself
+        int totalBombs = Character.getNumericValue(arr[numRow][numCol]);
+        //if the sum of bombs is less than the supposed sum of bombs specified by the digit, the bomb count is too small, so we return true
+        if(sum<totalBombs) return true;
+        //otherwise, we have enough bombs, so return false
+        return false;
+    }
+
+    //function to check every situational ending of a digit's AOE and if it has the proper number of bombs (specifically if it has too few or not)
+    static boolean goodEndOfAOE(char[][] arr, int row, int col){
+        //no point in checking the first spot in a row/col, and it makes problems for these to be 0 later, so just in case one is 0, we return true
+        //it can't be the end of an AOE
+        if(row==0||col==0) return true;
+
+        //go through every possible end-of-AOE spot; if there arent enough bombs, it's a bad end of the AOE, so we return false
+
+        //if row is LINES-1 and col is LINES-1 and arr at row and col is a number, call with row and col
+        if(row==LINES-1&&col==LINES-1&&Character.isDigit(arr[row][col])) {
+            if(isBombTooSmall(arr, row, col)) return false;
+        }
+        //else if row is LINES-1 and arr at row and col-1 is a number, call with row and col-1
+        else if(row==LINES-1&&Character.isDigit(arr[row][col-1])){
+            if(isBombTooSmall(arr, row, col-1)) return false;
+        }
+        //else if col is LINES-1 and arr at row-1 and col is a number, call with row-1 and col
+        else if(col==LINES-1&&Character.isDigit(arr[row-1][col])){
+            if(isBombTooSmall(arr, row-1, col)) return false;
+        }
+        //else call with row-1 and col-1
+        else if(Character.isDigit(arr[row-1][col-1])){
+            if(isBombTooSmall(arr, row-1, col-1)) return false;
+        }
+        //otherwise, we have enough bombs, so we return true
+        return true;
+    }
+
+    //function to print the board
+    static void printBoard(char[][] arr){
+        //print out each line
+        for(int i = 0; i < LINES; i++) System.out.println(arr[i]);
+    }
+}

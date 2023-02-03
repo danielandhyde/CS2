@@ -1,0 +1,75 @@
+/*
+Daniel Thew
+Guha COP3503C
+01/16/2022
+ */
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.*;
+
+public class politics2{
+
+    public static void main(String[] args) throws IOException {
+        //buffered reader to handle user inputs
+        BufferedReader buff = new BufferedReader(new InputStreamReader(System.in));
+        //tokenizer to take user input to be converted to tokens
+        StringTokenizer token = new StringTokenizer(buff.readLine());
+        //starting ints taken from the first line token holding # candidates and # supporters
+        int cands = Integer.parseInt(token.nextToken());
+        int sups = Integer.parseInt(token.nextToken());
+        //while the exit condition hasn't been met
+        while(cands!=0 && sups!=0){
+            //TreeMap with the index of a candidate's name in a future arraylist
+            //and an arraylist of strings holding supporter names
+            TreeMap<Integer, ArrayList<String>> csMap = new TreeMap<Integer, ArrayList<String>>();
+            //the arraylist to hold candidate names in a given index
+            ArrayList<String> cNames = new ArrayList<String>();
+            //the index to iterate through candidate names and to be updated with the latest "end" index for write-ins
+            int i;
+            //for every known candidate name
+            for(i = 0; i < cands; i++){
+                //add the candidate's name to the arraylist
+                cNames.add(buff.readLine());
+                //put in a new index and supporter arraylist to the TreeMap
+                csMap.put(i, new ArrayList<String>());
+            }
+            //for the total number of supporters (doesn't change dynamically)
+            for(int j = 0; j < sups; j++){
+                //declare a new tokenizer to take in two tokens
+                token = new StringTokenizer(buff.readLine());
+                //set the first token equal to the supporter's name,
+                //the second token equal to the candidate's name
+                String sName = token.nextToken();
+                String cName = token.nextToken();
+                //if the candidate is a write-in
+                if(!cNames.contains(cName)){
+                    //add the next unused index and a new arraylist to the treemap
+                    csMap.put(i, new ArrayList<>());
+                    //iterate i to the new "end" index
+                    i++;
+                    //add the candidate name to the candidate names arraylist
+                    cNames.add(cName);
+                }
+                //add to the current treemap candidate's index's supporter arraylist the supporter name
+                csMap.get(cNames.indexOf(cName)).add(sName);
+            }
+            //for the total number of candidates (write-ins included)
+            for(int x = 0; x < cNames.size(); x++){
+                //get the current supporter arraylist and store it here
+                ArrayList<String> curSup = csMap.get(x);
+                //for the length of this candidate's supporter arraylist
+                for(int y = 0; y < curSup.size(); y++){
+                    //print out the current iteration of the supporter arraylist
+                    System.out.println(curSup.get(y));
+                }
+            }
+            //tokenizer to take user input to be converted to tokens
+            token = new StringTokenizer(buff.readLine());
+            //ints taken from the first line token holding # candidates and # supporters
+            cands = Integer.parseInt(token.nextToken());
+            sups = Integer.parseInt(token.nextToken());
+        }
+    }
+}

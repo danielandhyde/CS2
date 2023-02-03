@@ -1,0 +1,140 @@
+/*
+Daniel Thew
+P5 - Polynomials
+COP3503 - Prof. Guha
+Spring 2022
+ */
+
+
+import java.util.Scanner;
+
+public class poly {
+
+    //poly object
+    static class poly_obj{
+        //object vars for the length of the polynomial and the stored coefficients
+        private int length;
+        private long[] coeff;
+
+        //constructor
+        public poly_obj(long[] vals){
+            this.coeff = vals;
+            this.length = vals.length;
+        }
+
+        //add this poly with one passed in
+        public poly_obj add(poly_obj other){
+            //if we have an invalid length, leave
+            if(other.length!=length||((other.length/2)%2!=0||(length/2)%2!=0)) return null;
+            //otherwise, add the coefficients for each index (power of x), store in a new arr, and return a poly with this as the input
+            long[] temp = new long[length];
+            for(int a = 0; a < length; a++){
+                temp[a] = coeff[a] + other.coeff[a];
+            }
+            return new poly_obj(temp);
+        }
+
+        //subtract this poly with one passed in
+        public poly_obj sub(poly_obj other){
+            //if we have an invalid length, leave
+            if(other.length!=length||((other.length/2)%2!=0||(length/2)%2!=0)) return null;
+            //otherwise, subtract the coefficients for each index (power of x), store in a new arr, and return a poly with this as the input
+            long[] temp = new long[length];
+            for(int a = 0; a < length; a++){
+                temp[a] = coeff[a] - other.coeff[a];
+            }
+            return new poly_obj(temp);
+        }
+
+        //slow, standard mult process for this poly and another passed in
+        public poly_obj multSlow(poly_obj other){
+            //new array of the eventual number of coefficients in the product
+            long[] temp_long = new long[other.length+length-1];
+            //for each coefficient of each poly
+            for(int i = 0; i < other.length; i++)
+                for(int j = 0; j < length; j++)
+                    //in the given index, add in the product of the matching coefficients for the eventual power of x
+                    temp_long[i + j] += (other.coeff[i] * coeff[j]);
+            //return new poly with the given array of coefficients
+            return new poly_obj(temp_long);
+        }
+
+        //karatsuba's multiplication algorithm
+        public poly_obj mult(poly_obj other){
+            //for the base case (fewer than 32 coefficients), just do slow mult
+            if(other.length<=32){
+                return multSlow(other);
+            }
+            //get the halves of each polynomial
+            poly_obj a = getRight();
+            poly_obj b = getLeft();
+            poly_obj c = other.getRight();
+            poly_obj d = other.getLeft();
+
+            //multiply the low halves of each and high halves of each
+            poly_obj lowR = a.mult(c);
+            poly_obj highR = b.mult(d);
+
+            //add the low and high halves of each, multiply the sums, and then subtract from it the sums of the products of each halves
+            poly_obj aSum = b.add(a);
+            poly_obj bSum = d.add(c);
+            poly_obj mid = aSum.mult(bSum);
+            mid.sub(lowR.add(highR));
+
+            //store in an array the new coefficients from each polynomial product and return the new poly made therefrom
+            long[] hold = new long[length<<1];
+            for(int x = 0; x  < lowR.length; x++){
+                hold[x]+=lowR.coeff[x];
+            }
+            for(int y = length; y < length+highR.length; y++){
+                hold[y]+=highR.coeff[y];
+            }
+            for(int z = length/2; z < (length/2)+ mid.length; z++){
+                hold[z]+=mid.coeff[z];
+            }
+            return new poly_obj(hold);
+        }
+
+        //get the left side of a polynomial
+        private poly_obj getLeft(){
+            long[] temp = new long[length/2];
+            for(int a = 0; a < temp.length; a++) temp[a] = coeff[a];
+            return new poly_obj(temp);
+        }
+
+        //get the right side of a polynomial
+        private poly_obj getRight(){
+            long[] temp = new long[length/2];
+            for(int a = temp.length; a < length; a++) temp[a-temp.length] = coeff[a];
+            return new poly_obj(temp);
+        }
+
+        //print the coefficients of a polynomial
+        private void print_poly(int deg){
+            int cur_len = (int)Math.pow(2, deg+1)-1;
+            StringBuilder end_str = new StringBuilder();
+            for(int a = 0; a < cur_len; a++) end_str.append(coeff[a]+'\n');
+            System.out.print(end_str);
+            //for(int a = 0; a < cur_len; a++) System.out.println(coeff[a]);
+        }
+    }
+
+    //main
+    public static void main(String[] args) {
+        //scan in the degree and ascribe the number of coefficients to 2 raised to this power
+        Scanner hal = new Scanner(System.in);
+        int degree = hal.nextInt();
+        int len = (int)Math.pow(2,degree);
+        //create the coefficient arrays of this length using user input
+        long[] poly1 = new long[len];
+        long[] poly2 = new long[len];
+        for(int a = 0; a < len; a++) poly1[a] = hal.nextInt();
+        for(int b = 0; b < len; b++) poly2[b] = hal.nextInt();
+        //create the polynomials from these arrays, then store their product from karatsuba's in a new polynomial
+        poly_obj k1 = new poly_obj(poly1);
+        poly_obj k2 = new poly_obj(poly2);
+        poly_obj k3 = k1.mult(k2);
+        //print this product
+        k3.print_poly(degree);
+    }
+}

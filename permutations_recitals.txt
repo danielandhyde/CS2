@@ -1,0 +1,103 @@
+import java.util.Scanner;
+
+/*
+Daniel Thew
+COP3503C - Guha
+Dance Recital RP2
+Spring 2022
+ */
+
+public class dancerecital {
+
+    //maximum number of quick changes (26 changes for each of the 10 lines)
+    static final int maxQC = 260;
+
+    //main
+    public static void main(String[] args) {
+        //scanner for user input
+        Scanner hal = new Scanner(System.in);
+
+        //scan in the number of dances and then clear the line for the next lines of input
+        int recs = hal.nextInt();
+        hal.nextLine();
+
+        //declare a string array for the num. of dances and fill with that number of lines of user input
+        String[] recArr = new String[recs];
+        for(int i = 0; i < recs; i++){
+            recArr[i] = hal.nextLine();
+        }
+
+        //2d int array to hold a grid of the number of quick changes each row would make with another row (shown in columns)
+        int[][] qChangeArr = new int[recs][recs];
+        getQChanges(qChangeArr, recArr, recs);
+
+        //the minimum number of quick changes needed for the grid; print
+        int tSum = checkPermRows(qChangeArr, recs);
+        System.out.println(tSum);
+    }
+
+    //function to get the 2d grid of quick changes with each row, per row
+    static void getQChanges(int[][] qArr, String[] arr, int recs){
+        //for each spot (rows and columns)
+        for(int i = 0; i < recs; i++){
+            for(int j = 0; j < recs; j++){
+                //don't count the QC's with itself
+                if(j==i) continue;
+
+                //for the length of the dance specified by the inside loop,
+                //add 1 QC if it shares a letter with the row indicated by the outside loop
+                for(int k = 0; k < arr[i].length(); k++){
+                    if(arr[j].indexOf(arr[i].charAt(k))!=-1) qArr[i][j]++;
+                }
+
+            }
+        }
+    }
+
+    //function to go through and start at each row, determinining the ultimately minimum number of QC's needed
+    static int checkPermRows(int[][] qArr, int recs){
+        //max sum, used array
+        int trueSum = maxQC;
+        int[] usedArr = new int[recs];
+
+        //for the number of rows, get the min QC's when you start at the given row
+        //if it's less than the previous trueSum, update
+        for(int i = 0; i < recs; i++){
+            int curSum = bestPerm(qArr, i, usedArr, 0, recs, 0, trueSum);
+            if(curSum<trueSum) trueSum = curSum;
+        }
+
+        //return min number of QC's
+        return trueSum;
+    }
+
+    //function to determine the min number of QC's for a given row's permutations
+    static int bestPerm(int[][] qArr, int row, int[] used, int done, int recs, int curSum, int trueSum){
+        //if you've done the max number of transitions, check if curSum is a new min QC; if so, update; then return trueSum
+        if(done==recs-1){
+            if(curSum<trueSum) trueSum = curSum;
+            return trueSum;
+        }
+
+        //for the number of columns in the current row
+        for(int j = 0; j < recs; j++){
+            //if the column specifies its own row, continue
+            if(j==row) continue;
+            //if you've used the row specified by this column, continue
+            if(used[j]==1) continue;
+            //if the curSum would be too big, continue
+            if(curSum+qArr[row][j]>=trueSum) continue;
+
+            //update the used array to include the current row
+            // then call recursively adding 1 to done, updating curSum, and changing the row to the current column
+            used[row] = 1;
+            trueSum = bestPerm(qArr, j, used, done+1, recs, curSum+qArr[row][j], trueSum);
+
+            //when we come back, uncheck the current row in the used array
+            used[row] = 0;
+        }
+
+        //ultimate return of the trueSum (min QC's)
+        return trueSum;
+    }
+}

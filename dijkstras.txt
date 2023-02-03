@@ -1,0 +1,124 @@
+/*
+Daniel Thew
+RP4
+COP3503 - Prof. Guha
+Spring 2022
+ */
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.PriorityQueue;
+import java.util.Scanner;
+
+public class shortestpath2 {
+    static int MAX = 100000000;
+
+    static class edge implements Comparable<edge>{
+        int destination, timeZero, interval, distanceT, curTime;
+        public edge(int d, int t, int i, int s, int c){
+            destination = d;
+            timeZero = t;
+            interval = i;
+            distanceT = s;
+            curTime = c;
+        }
+
+        @Override
+        public int compareTo(edge o) {
+            edge cur = new edge(destination, timeZero, interval, distanceT, curTime);
+            return distance(cur) - distance(o);
+        }
+    }
+    public static void main(String[] args){
+        //scanner for user input; get the inital 4 input values
+        Scanner hal = new Scanner(System.in);
+        int nodes = hal.nextInt();
+        int edges = hal.nextInt();
+        int queries = hal.nextInt();
+        int start = hal.nextInt();
+        //tot_time is to measure the runtime
+        double tot_time = 0;
+        //while the user hasn't entered 4 consecutive 0's for the given variables
+        while(nodes>0||edges>0||queries>0||start>0) {
+            double time = System.currentTimeMillis();
+
+            //declare an arraylist to hold edges, which are int arrays of length 5
+            //fill each array with user input, then add the edge to the list and start again
+            ArrayList<edge> edge_list = new ArrayList<>();
+            for (int a = 0; a < edges; a++) {
+                int[] temp = new int[5];
+                for (int b = 0; b < 5; b++){
+                    temp[b] = hal.nextInt();
+                }
+                edge t_edge = new edge(temp[0], temp[1], temp[2], temp[3], temp[4]);
+                edge_list.add(t_edge);
+            }
+            //get the end of dijkstras from the algorithm
+            int[] end_arr = dijkstra(start, nodes, edge_list);
+            //for each query, get the corresponding distance from the end of dijkstra's
+            for (int c = 0; c < queries; c++) {
+                int cur_q = hal.nextInt();
+                int hold_print = end_arr[cur_q];
+                //if there's no edge to a node, say it's impossible
+                //otherwise, just print the distance
+                if (hold_print == MAX) System.out.println("Impossible");
+                else System.out.println(hold_print);
+            }
+            time = System.currentTimeMillis()-time;
+            tot_time += time;
+
+            //start the process again by getting the corresponding vars
+            nodes = hal.nextInt();
+            edges = hal.nextInt();
+            queries = hal.nextInt();
+            start = hal.nextInt();
+        }
+        tot_time /= 1000.0;
+        //System.out.println("time: "+tot_time);
+    }
+
+    //function that yields the end result of dijkstra's
+    public static int[] dijkstra(int start, int nodes, ArrayList<edge> edge_list){
+        double d_time = (double)System.currentTimeMillis();
+        //declare an array to hold the current shortest distances to each node and fill with max distance
+        int[] rArr = new int[nodes];
+        for(int i = 0; i < nodes; i++) rArr[i] = MAX;
+        boolean[] used = new boolean[nodes];
+        Arrays.fill(used, false);
+        //set the first node's distance to 0 (from A to A is 0 time)
+        rArr[start] = 0;
+        PriorityQueue<Integer> short_edges = new PriorityQueue<>();
+        short_edges.add(start);
+        //while we still have edges to use
+        while(short_edges.size()>0){
+            int vert = short_edges.poll();
+            //if(used[vert]) continue;
+            used[vert] = true;
+            for(int i = 0; i < edge_list.size(); i++){
+                if(edge_list.get(i).destination!=vert) continue;
+                if(used[edge_list.get(i)[1]]) continue;
+                int hold = distance(edge_list.get(i));
+                if(hold<rArr[edge_list.get(i)[1]]){
+                    rArr[edge_list.get(i)[1]] = hold;
+                    short_edges.add(edge_list.get(i)[1]);
+                    edge_list.remove(i);
+                    i--;
+                }
+            }
+        }
+
+        //time helpers
+        d_time = ((double)System.currentTimeMillis() - d_time)/1000.0;
+        //System.out.println("Dijkstra's time: "+d_time);
+
+        return rArr;
+    }
+
+    public static int distance(edge node){
+        int t = node.curTime, interval = node.interval, dist = node.distanceT;
+        if(t<=node.timeZero) return t+dist;
+        if(interval==0) return -1;
+        t += (t-node.timeZero)%interval;
+        return t+dist;
+    }
+}

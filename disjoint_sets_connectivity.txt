@@ -1,0 +1,133 @@
+/*
+Daniel Thew
+Destroy Connections
+Prof. Arup Guha - COP3503C
+Spring 2022
+ */
+
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.TreeMap;
+
+//class for disjoint sets
+class djSet{
+    //int array for each node's ancestors and int for size of DJ set
+    int[] ancestry;
+    int size;
+
+    //class constructor
+    public djSet(int size){
+        this.size = size;
+        ancestry = new int[size];
+        genSet();
+    }
+
+    //simple aux function for constructor to set each node to be its own parent at the start
+    void genSet(){
+        for(int i = 0; i < size; i++){
+            ancestry[i] = i+1;
+        }
+    }
+
+    //recursive function to find the ultimate root of any node
+    int findRoot(int val){
+        if(ancestry[val-1] == val) return val;
+        else return findRoot(ancestry[val-1]);
+    }
+
+    //function to union two given nodes
+    void union(int a, int b){
+        //find each node's ultimate root
+        int rootA = findRoot(a);
+        int rootB = findRoot(b);
+        //if they share the same u. root, do nothing
+        if(rootA == rootB) return;
+        //if a's root is greater, then let it become a child of b
+        if(rootA > rootB){
+            ancestry[rootA-1] = rootB;
+        }
+        //if b's root is greater, then let it become a child of a
+        else{
+            ancestry[rootB-1] = rootA;
+        }
+    }
+
+    //connectivity of the disjointed set
+    long connectivity(){
+        //starting at 0
+        long con = 0;
+        //we need an arrayList for the indices of the unioned nodes and a treemap for the children of a key node
+        ArrayList<Integer> ancList = new ArrayList<>();
+        TreeMap<Integer, Integer> ancMap = new TreeMap<>();
+        //get the index of each unique key node, store it, and then store its family's size
+        for(int i = 0; i < size; i++){
+            int rVal = findRoot(i+1);
+            if(!ancMap.containsKey(rVal)){
+                ancMap.put(rVal, 1);
+                ancList.add(rVal);
+            }
+            else ancMap.put(rVal, ancMap.get(rVal)+1);
+        }
+        //add the squared family size of each index of the unique key nodes
+        for(int j = 0; j < ancMap.size(); j++){
+            con += Math.pow(ancMap.get(ancList.get(j)), 2);
+        }
+        //return the final connectivity
+        return con;
+    }
+}
+
+//main
+public class main {
+    public static void main(String[] args) {
+        //scan in the number of computers (nodes), number of pairs to union, and number of pairs to destroy
+        Scanner hal = new Scanner(System.in);
+        int numComps, numPairs, numDests;
+        numComps = hal.nextInt();
+        numPairs = hal.nextInt();
+        numDests = hal.nextInt();
+        //create a new DJ set with the number of nodes
+        djSet conSet = new djSet(numComps);
+        //create arraylists for the pairs and the pairs to be destroyed
+        //the pairList needs two nodes, so it will hold an array of 2 integers
+        ArrayList<Integer[]> pairList = new ArrayList<>();
+        ArrayList<Integer> destList = new ArrayList<>();
+
+        //scan in the pairs to be unioned
+        for(int i = 0; i < numPairs; i++){
+            int argOne = hal.nextInt();
+            int argTwo = hal.nextInt();
+            Integer[] temp = {argOne, argTwo};
+            pairList.add(temp);
+        }
+
+        //scan in the pairs to be destroyed
+        for(int j = 0; j < numDests; j++){
+            int destroyPair = hal.nextInt();
+            destList.add(destroyPair);
+        }
+
+        //union the pairs that won't be destroyed
+        for(int k = 0; k < numPairs; k++){
+            if(destList.contains(k+1)) continue;
+            conSet.union(pairList.get(k)[0], pairList.get(k)[1]);
+        }
+
+        //arraylist of longs to hold the connectivity at each destruction
+        ArrayList<Long> allCons = new ArrayList<>();
+        //add the current connectivity, which is the FINAL CONNECTIVITY (all to -be-destroyed nodes are NOT unioned right now)
+        allCons.add(conSet.connectivity());
+        //starting at the final pair to be destroyed, union each pair to be unioned
+        //add each connectivity value as you go (you add the next-to-last value each time)
+        for(int l = numDests-1; l >= 0; l--){
+            conSet.union(pairList.get(destList.get(l)-1)[0], pairList.get(destList.get(l)-1)[1]);
+            allCons.add(conSet.connectivity());
+        }
+
+        //starting at the last index of the connectivies (so the first connectivity value, as per our last
+        //for loop), print each value out
+        for(int m = allCons.size()-1; m >=0; m--){
+            System.out.println(allCons.get(m));
+        }
+    }
+}
